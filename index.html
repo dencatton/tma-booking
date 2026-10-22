@@ -528,7 +528,7 @@ div[style*="background: rgb(79"] { display: none !important; }
       <div id="cc-sets" style="display:none">
         <div class="cc-3">
           <label>Наценка %<input id="cs-markup" type="number" step="5"></label>
-          <label>Менеджер %<input id="cs-mgr" type="number" step="1"></label>
+          <label>Агентские %<input id="cs-mgr" type="number" step="1"></label>
           <label>Округл. €<input id="cs-round" type="number" step="1"></label>
           <label>Водитель лей<input id="cs-driver" type="number" step="50"></label>
           <label>Гид лей/день<input id="cs-guide" type="number" step="50"></label>
@@ -1817,7 +1817,7 @@ function ccCalc(){
   t.items.forEach((it,i)=>{if(ccS.opts[i]) rows.push([it.n+(it.t==='pp'?' × '+pax:''),it.t==='pp'?it.p*pax:it.p]);});
   ccEl('cc-break').innerHTML=rows.map(x=>`<tr><td>${x[0]}</td><td>${ccL(x[1])}</td></tr>`).join('')
     +`<tr class="t"><td>Себестоимость</td><td>${ccL(cost)}</td></tr>`
-    +(mgr?`<tr><td>Менеджер ${CC.mgr}%</td><td>${ccL(mgr)}</td></tr>`:'')
+    +(mgr?`<tr><td>Агентские ${CC.mgr}%</td><td>${ccL(mgr)}</td></tr>`:'')
     +`<tr class="${profit<0?'bad':'ok'}"><td>Чистая прибыль${dp?' (скидка '+disc+'%)':''}</td><td>${ccL(profit)} · ${cost?Math.round(profit/cost*100):0}%</td></tr>`;
   ccS.last={t,pax,guide,car,tot,full,dp,pp,cost,mgr,profit,eur};
   ccOffer();
@@ -1854,7 +1854,7 @@ function ccAddToApp(){
   const name=ccEl('cc-name').value.trim(), phone=ccEl('cc-phone').value.trim(), date=ccEl('cc-date').value, time=ccEl('cc-time').value;
   if(!name||!phone||!date||!time) return toast('⚠️ Заполни имя, телефон, дату и время','#f74f6f');
   const its=s.t.items.filter((it,i)=>s.t.items.indexOf(it)>-1&&ccS.opts[i]&&!it.hidden).map(i=>i.n).join(', ');
-  const notes=`${s.car.name}${s.guide?' · гид':''}${its?' · '+its:''}${s.dp?' · скидка '+Math.round(s.dp*100)+'%':''}${s.mgr?' · менеджер '+Math.round(s.mgr)+' лей':''}`;
+  const notes=`${s.car.name}${s.guide?' · гид':''}${its?' · '+its:''}${s.dp?' · скидка '+Math.round(s.dp*100)+'%':''}${s.mgr?' · агентские '+Math.round(s.mgr)+' лей':''}`;
   const r={id:Date.now(),type:'excursion',done:false,name,phone,date,time,tour:s.t.ru,
     pickup:ccEl('cc-pickup').value.trim(),people:String(s.pax),price:String(s.tot),cost:String(Math.round(s.cost+s.mgr)),
     rate:s.eur,notes,created:new Date().toISOString()};
