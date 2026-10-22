@@ -1776,7 +1776,7 @@ function ccCalc(){
   const n=ccPeople(),t=ccTour(),pax=ccN('cc-pax'),guide=+ccEl('cc-guide').value,eur=eurMdl||20.16;
   ccEl('cc-cars').innerHTML=CC_CARS.map(c=>`<button class="cc-car${ccS.car===c.id?' on':''}" ${c.cap<n?'disabled':''} onclick="ccPick('${c.id}')"><b>${c.name}</b><span>${c.note}</span></button>`).join('');
   const cap=ccEl('cc-cap'); if(n>7&&ccS.car!=='bus'){cap.style.display='block';cap.textContent=n+' чел. с гидом — в V-Class максимум 7.';} else cap.style.display='none';
-  const car=CC_CARS.find(c=>c.id===ccS.car), km=(ccN('cc-km')+ccN('cc-local'))*(t.transfer?2:1); // трансфер: машина возвращается пустой
+  const car=CC_CARS.find(c=>c.id===ccS.car), km=ccN('cc-km')*(t.transfer?2:1)+ccN('cc-local'); // трансфер: машина возвращается пустой
   // себестоимость
   const vFuel=km*CC.cons/100*CC.diesel, vWear=0;
   let fuel=0,wear=0,driver=0,bus=0;
