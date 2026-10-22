@@ -500,7 +500,7 @@ div[style*="background: rgb(79"] { display: none !important; }
     </div>
 
     <div class="cc-card">
-      <div class="cc-h">Клиент → предложение и заявка</div>
+      <div class="cc-h">Клиент → подтверждение и заявка</div>
       <div class="cc-2">
         <label>Имя<input id="cc-name" type="text" placeholder="John" oninput="ccOffer()"></label>
         <label>Телефон<input id="cc-phone" type="tel" placeholder="+373..."></label>
@@ -1828,14 +1828,15 @@ function ccOffer(){
   const d=ccEl('cc-date').value?new Date(ccEl('cc-date').value+'T12:00'):null;
   const ds=d?d.toLocaleDateString(L==='en'?'en-GB':L==='ro'?'ro-RO':'ru-RU',{weekday:'long',day:'numeric',month:'long'})+(tm?', '+tm:''):'';
   const ln={en:{en:'English',ru:'Russian',ro:'Romanian',it:'Italian'},ru:{en:'английском',ru:'русском',ro:'румынском',it:'итальянском'},ro:{en:'engleză',ro:'română',ru:'rusă',it:'italiană'}}[L][ccEl('cc-tlang').value];
-  const cn=car.id==='bus'?(L==='en'?'comfortable minibus':L==='ro'?'microbuz confortabil':'комфортабельном микроавтобусе'):car.name;
+  const cn=car.id==='bus'?(L==='en'?'comfortable minibus':L==='ro'?'microbuz confortabil':'комфортабельный микроавтобус'):car.name;
   const its=t.items.filter((it,i)=>ccS.opts[i]&&!it.hidden);
   const list=its.map(i=>'• '+(L==='ru'?i.n:i.en)).join('\n');
   const title=L==='en'?t.en:L==='ro'?t.ro:t.ru, pc=Math.round(dp*100);
   let x;
-  if(L==='en') x=`Hello${name?' '+name:''}! 👋\n\nThank you for your interest in Travel Moldova. Here is our offer:\n\n🗺 ${title}\n📅 ${ds}${pick?'\n📍 Pick-up: '+pick:''}\n👥 ${pax} ${pax===1?'person':'people'} · private tour\n⏱ approx. ${t.h} hours\n\nIncluded:\n• Private transfer by ${cn} with driver (pick-up and drop-off in Chișinău)\n${guide?'• Licensed guide in '+ln+'\n':''}${list}\n\n💶 Total price: ${tot} € for the group (≈ ${pp} € per person)${dp?'\n🎁 Special price −'+pc+'% (instead of '+full+' €)':''}\nPayment: cash (EUR / USD / MDL) or card.\n\nTo confirm, just reply with your pick-up address and time. Free cancellation up to 24 hours before the tour.\n\nBest regards,\nTravel Moldova 🇲🇩`;
-  else if(L==='ro') x=`Bună ziua${name?', '+name:''}! 👋\n\nVă mulțumim pentru interesul față de Travel Moldova. Oferta noastră:\n\n🗺 ${title}\n📅 ${ds}${pick?'\n📍 Preluare: '+pick:''}\n👥 ${pax} ${pax===1?'persoană':'persoane'} · tur privat\n⏱ aprox. ${t.h} ore\n\nInclus:\n• Transport privat cu ${cn} și șofer (preluare și întoarcere în Chișinău)\n${guide?'• Ghid în limba '+ln+'\n':''}${list}\n\n💶 Preț total: ${tot} € pentru grup (≈ ${pp} € de persoană)${dp?'\n🎁 Preț special −'+pc+'% (în loc de '+full+' €)':''}\nPlata: numerar (EUR / USD / MDL) sau card.\n\nPentru confirmare, trimiteți adresa și ora de preluare. Anulare gratuită cu 24 de ore înainte.\n\nCu respect,\nTravel Moldova 🇲🇩`;
-  else x=`Здравствуйте${name?', '+name:''}! 👋\n\nСпасибо за интерес к Travel Moldova. Наше предложение:\n\n🗺 ${title}\n📅 ${ds}${pick?'\n📍 Встреча: '+pick:''}\n👥 ${pax} чел. · индивидуальный тур\n⏱ около ${t.h} ч\n\nВходит:\n• Трансфер на ${cn} с водителем (забираем и привозим в Кишинёве)\n${guide?'• Гид на '+ln+' языке\n':''}${list}\n\n💶 Итого: ${tot} € за группу (≈ ${pp} € с человека)${dp?'\n🎁 Специальная цена −'+pc+'% (вместо '+full+' €)':''}\nОплата: наличными (EUR / USD / MDL) или картой.\n\nДля подтверждения пришлите адрес и время встречи. Бесплатная отмена за 24 часа до тура.\n\nС уважением,\nTravel Moldova 🇲🇩`;
+  const sig='Travel Moldova Agency\nstr. Pușkin 35, Chișinău';
+  if(L==='en') x=`Hello${name?' '+name:''}! 👋\n\n✅ Your tour is confirmed. Thank you for choosing Travel Moldova!\n\n🗺 Tour: ${title}\n📅 Date: ${ds}${pick?'\n📍 Pick-up: '+pick:''}\n👥 Guests: ${pax} · private tour\n⏱ Duration: approx. ${t.h} hours\n🚐 Vehicle: ${cn} with driver\n${guide?'🎙 Guide: '+ln+'\n':''}\nIncluded:\n• Pick-up and drop-off in Chișinău\n${list}\n\n💶 Total: ${tot} € for the group (≈ ${pp} € per person)${dp?'\n🎁 Special price −'+pc+'% (instead of '+full+' €)':''}\nPayment on the day of the tour: cash (EUR / USD / MDL) or card.\n\nOur driver will be waiting at the pick-up point at the agreed time. If anything changes, just reply to this message. Free cancellation up to 24 hours before the tour.\n\nSee you soon! 🇲🇩\n${sig}`;
+  else if(L==='ro') x=`Bună ziua${name?', '+name:''}! 👋\n\n✅ Turul dumneavoastră este confirmat. Vă mulțumim că ați ales Travel Moldova!\n\n🗺 Tur: ${title}\n📅 Data: ${ds}${pick?'\n📍 Preluare: '+pick:''}\n👥 Persoane: ${pax} · tur privat\n⏱ Durata: aprox. ${t.h} ore\n🚐 Transport: ${cn} cu șofer\n${guide?'🎙 Ghid: limba '+ln+'\n':''}\nInclus:\n• Preluare și întoarcere în Chișinău\n${list}\n\n💶 Total: ${tot} € pentru grup (≈ ${pp} € de persoană)${dp?'\n🎁 Preț special −'+pc+'% (în loc de '+full+' €)':''}\nPlata în ziua turului: numerar (EUR / USD / MDL) sau card.\n\nȘoferul vă va aștepta la locul de preluare la ora stabilită. Dacă se schimbă ceva, răspundeți la acest mesaj. Anulare gratuită cu 24 de ore înainte.\n\nVă așteptăm! 🇲🇩\n${sig}`;
+  else x=`Здравствуйте${name?', '+name:''}! 👋\n\n✅ Ваш тур подтверждён. Спасибо, что выбрали Travel Moldova!\n\n🗺 Тур: ${title}\n📅 Дата: ${ds}${pick?'\n📍 Встреча: '+pick:''}\n👥 Гостей: ${pax} · индивидуальный тур\n⏱ Длительность: около ${t.h} ч\n🚐 Транспорт: ${cn} с водителем\n${guide?'🎙 Гид: на '+ln+' языке\n':''}\nВходит:\n• Забираем и привозим обратно в Кишинёве\n${list}\n\n💶 Итого: ${tot} € за группу (≈ ${pp} € с человека)${dp?'\n🎁 Специальная цена −'+pc+'% (вместо '+full+' €)':''}\nОплата в день тура: наличными (EUR / USD / MDL) или картой.\n\nВодитель будет ждать вас в месте встречи в назначенное время. Если что-то изменится — просто ответьте на это сообщение. Бесплатная отмена за 24 часа до тура.\n\nДо встречи! 🇲🇩\n${sig}`;
   ccEl('cc-offer').value=x;
 }
 function ccCopy(){
