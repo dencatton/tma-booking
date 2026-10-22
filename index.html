@@ -477,8 +477,15 @@ div[style*="background: rgb(79"] { display: none !important; }
       <label>Маршрут<select id="cc-tour" onchange="ccLoadTour()"></select></label>
       <div class="cc-3">
         <label>Туристов<input id="cc-pax" type="number" min="1" value="2" inputmode="numeric" oninput="ccAutoCar();ccCalc()"></label>
-        <label>Км маршрут<input id="cc-km" type="number" min="0" inputmode="numeric" oninput="ccCalc()"></label>
+        <label><span id="cc-kml">Км маршрут</span><input id="cc-km" type="number" min="0" inputmode="numeric" oninput="ccAutoHrs();ccCalc()"></label>
         <label>+ Км по месту<input id="cc-local" type="number" min="0" inputmode="numeric" oninput="ccCalc()"></label>
+      </div>
+      <div id="cc-trf" style="display:none">
+        <label>Направление<select id="cc-trroute" onchange="ccTrRoute()"><option value="air">Аэропорт ↔ город (фикс)</option><option value="ods">Кишинёв ↔ Одесса (фикс)</option><option value="km">Другое — по км</option></select></label>
+        <div class="cc-2">
+        <label>Часы водителя<input id="cc-hrs" type="number" min="0" step="0.5" inputmode="decimal" oninput="ccS.hrsManual=true;ccCalc()"></label>
+        <label>Куда<input id="cc-to" type="text" placeholder="Аэропорт, Одесса, Яссы…" oninput="ccOffer()"></label>
+        </div>
       </div>
       <div class="cc-2">
         <label>Гид<select id="cc-guide" onchange="ccAutoCar();ccCalc()"><option value="1">С гидом</option><option value="0">Без гида</option></select></label>
@@ -489,7 +496,10 @@ div[style*="background: rgb(79"] { display: none !important; }
       <div class="cc-alert" id="cc-cap" style="display:none"></div>
       <div class="cc-h" style="margin-top:14px">Что входит</div>
       <div id="cc-items"></div>
-      <label style="margin-top:8px">Скидка клиенту, %<input id="cc-disc" type="number" min="0" max="30" step="5" value="0" inputmode="numeric" oninput="ccCalc()"></label>
+      <label style="margin-top:8px">Скидка клиенту, %<input id="cc-disc" type="number" min="0" max="50" step="5" value="0" inputmode="numeric" oninput="ccCalc()"></label>
+      <div id="cc-apr" style="display:none">
+        <label>Скидка больше лимита — кто одобрил?<select id="cc-approver" onchange="ccCalc()"><option value="">— выбери —</option><option>Арина</option><option>Денис</option></select></label>
+      </div>
     </div>
 
     <div class="cc-card">
@@ -509,7 +519,7 @@ div[style*="background: rgb(79"] { display: none !important; }
         <label>Дата<input id="cc-date" type="date" oninput="ccCalc()"></label>
         <label>Время<input id="cc-time" type="time" value="10:00" oninput="ccOffer()"></label>
       </div>
-      <label>Откуда забрать<input id="cc-pickup" type="text" placeholder="Отель, адрес" oninput="ccOffer()"></label>
+      <label>Откуда забрать / встреча<input id="cc-pickup" type="text" placeholder="Отель, адрес" oninput="ccOffer()"></label>
       <label>Язык сообщения<select id="cc-olang" onchange="ccOffer()"><option value="en">English</option><option value="ru">Русский</option><option value="ro">Română</option></select></label>
       <textarea id="cc-offer"></textarea>
       <div class="cc-btns">
@@ -517,7 +527,7 @@ div[style*="background: rgb(79"] { display: none !important; }
         <button class="cc-b" onclick="ccShare('wa')">WhatsApp</button>
         <button class="cc-b" onclick="ccShare('tg')">Telegram</button>
       </div>
-      <button class="cc-b main" style="margin-top:12px" onclick="ccAddToApp()">➕ Добавить экскурсию в апп</button>
+      <button class="cc-b main" style="margin-top:12px" onclick="ccAddToApp()">➕ Добавить в апп</button>
     </div>
 
     <div class="cc-card">
@@ -541,6 +551,13 @@ div[style*="background: rgb(79"] { display: none !important; }
           <label>Водитель трансфер<input id="cs-tdriver" type="number" step="50"></label>
           <label>Выходные вино €/чел<input id="cs-wkd" type="number" step="1"></label>
           <label>Легковая: −€<input id="cs-small" type="number" step="5"></label>
+          <label>1 гость: −% базы<input id="cs-solo" type="number" step="5"></label>
+          <label>Трансфер: € за км<input id="cs-perkm" type="number" step="0.1"></label>
+          <label>Водитель трансфер, лей/час<input id="cs-drvh" type="number" step="10"></label>
+          <label>Трансфер: минимум €<input id="cs-trmin" type="number" step="5"></label>
+          <label>Аэропорт 1–4 чел, €<input id="cs-tr_air" type="number" step="5"></label>
+          <label>Аэропорт 5+ чел, €<input id="cs-tr_air5" type="number" step="5"></label>
+          <label>Одесса, €<input id="cs-tr_ods" type="number" step="5"></label>
         </div>
         <div class="cc-h" style="margin-top:6px">Цены туров: база + за человека, €</div>
         <div id="cs-tours"></div>
@@ -1695,7 +1712,7 @@ try { const _hdrRate=document.getElementById('header-rate'); if(_hdrRate) _hdrRa
 
 // ── КАЛЬКУЛЯТОР ТУРОВ ──────────────────────────────────────────────
 // Настройки по умолчанию. Общие настройки хранятся в Supabase (таблица calc_settings), меняет только владелец.
-const CC_DEFAULTS={scale:100,mgr:10,round:5,driver:700,tdriver:300,guide:600,wear:10,diesel:34,petrol:32,cons:10,local:20,maxdisc:10,wkd:5,small:10};
+const CC_DEFAULTS={scale:100,mgr:10,round:5,driver:700,tdriver:300,guide:600,wear:10,diesel:34,petrol:32,cons:10,local:20,maxdisc:10,wkd:5,small:10,solo:15,perkm:1,drvh:90,trmin:20,tr_air:30,tr_air5:50,tr_ods:250};
 let CC=Object.assign({},CC_DEFAULTS);
 const CC_CARS=[
   {id:"vclass",name:"Mercedes V-Class",fuel:"diesel",cap:7,note:"до 7 с гидом · дизель"},
@@ -1707,7 +1724,8 @@ const ccBus=n=>n<=8?2800:n<=20?4600:6000;
 // km — по дорогам из Кишинёва и обратно. t:"pp" — за человека, "group" — за группу. opt — галочка по умолчанию снята
 // Цены туров: база за группу + доплата за человека (€). Себестоимость позиций — лей (официальные цены, 10.2026).
 // opt — опция (галочка снята), add — доплата клиенту за опцию, €. Источник и та же сетка: Google-таблица «Travel Moldova — цены туров 2026».
-const CC_TOURS=[{"id": "orhei", "ru": "Старый Орхей (+ Курки)", "en": "Old Orhei & Curchi Monastery", "ro": "Orheiul Vechi și Mănăstirea Curchi", "km": 120, "h": "6–7", "B": 190, "PP": 30, "items": [{"n": "Гид музея Старый Орхей", "en": "Old Orhei guided visit", "t": "group", "p": 300}, {"n": "Вход Старый Орхей", "en": "Old Orhei entrance", "t": "pp", "p": 20}, {"n": "Парковка Орхей", "en": "", "t": "group", "p": 50, "hidden": 1}, {"n": "Обед в Бутученах / Эпикраме", "en": "Traditional lunch", "t": "pp", "p": 300, "opt": 1, "add": 20}]}, {"id": "orhei_cricova", "ru": "Старый Орхей + Крикова", "en": "Old Orhei + Cricova winery", "ro": "Orheiul Vechi + Cricova", "km": 125, "h": "8–9", "B": 230, "PP": 60, "wine": 1, "items": [{"n": "Гид музея Старый Орхей", "en": "Old Orhei guided visit", "t": "group", "p": 300}, {"n": "Вход Старый Орхей", "en": "Old Orhei entrance", "t": "pp", "p": 20}, {"n": "Парковка Орхей", "en": "", "t": "group", "p": 50, "hidden": 1}, {"n": "Крикова: подземный город + дегустация «Бизнес»", "en": "Cricova underground city tour + 'Business' tasting", "t": "pp", "p": 700}, {"n": "Обед в Бутученах / Эпикраме", "en": "Traditional lunch", "t": "pp", "p": 300, "opt": 1, "add": 20}]}, {"id": "orhei_curchi", "ru": "Орхей + Курки + обед", "en": "Old Orhei + Curchi Monastery + traditional lunch", "ro": "Orheiul Vechi + Curchi + prânz tradițional", "km": 140, "h": "8", "B": 230, "PP": 45, "items": [{"n": "Гид музея Старый Орхей", "en": "Old Orhei guided visit", "t": "group", "p": 300}, {"n": "Вход Старый Орхей", "en": "Old Orhei entrance", "t": "pp", "p": 20}, {"n": "Парковка Орхей", "en": "", "t": "group", "p": 50, "hidden": 1}, {"n": "Обед в Бутученах / Эпикраме", "en": "Traditional lunch", "t": "pp", "p": 300}, {"n": "Сафари", "en": "Off-road safari", "t": "pp", "p": 75, "opt": 1, "add": 5}]}, {"id": "transnistria", "ru": "Приднестровье (Бендеры + Тирасполь)", "en": "Transnistria: Bender + Tiraspol ('Back to USSR')", "ro": "Transnistria: Tighina + Tiraspol", "km": 150, "h": "7–8", "B": 240, "PP": 30, "items": [{"n": "Бендерская крепость", "en": "Bender Fortress entrance", "t": "pp", "p": 50}, {"n": "Back to USSR", "en": "'Back to USSR' experience", "t": "group", "p": 150}, {"n": "Прочее", "en": "", "t": "pp", "p": 30, "hidden": 1}, {"n": "Советский обед", "en": "Soviet-style lunch", "t": "pp", "p": 250, "opt": 1, "add": 15}]}, {"id": "transnistria_milestii", "ru": "Приднестровье + Милештий Мич", "en": "Transnistria + Milestii Mici winery", "ro": "Transnistria + Mileștii Mici", "km": 180, "h": "9–10", "B": 270, "PP": 70, "wine": 1, "items": [{"n": "Бендерская крепость", "en": "Bender Fortress entrance", "t": "pp", "p": 50}, {"n": "Back to USSR", "en": "'Back to USSR' experience", "t": "group", "p": 150}, {"n": "Прочее", "en": "", "t": "pp", "p": 30, "hidden": 1}, {"n": "Милешты: подвалы + дегустация «Хай, норок»", "en": "Milestii Mici cellars + 'Hai Noroc' tasting", "t": "pp", "p": 800}]}, {"id": "gagauzia", "ru": "Гагаузия (Комрат)", "en": "Gagauzia (Comrat)", "ro": "Găgăuzia (Comrat)", "km": 210, "h": "9", "B": 260, "PP": 35, "items": [{"n": "Дегустация Vinuri de Comrat", "en": "Comrat winery tasting", "t": "pp", "p": 350}, {"n": "Музей ковров", "en": "Carpet Museum", "t": "pp", "p": 15}, {"n": "Ферма лошадей/осликов", "en": "Horse & donkey farm", "t": "group", "p": 150}, {"n": "Бешалма: катание на телеге", "en": "Cart ride in Beshalma", "t": "group", "p": 150, "opt": 1, "add": 10}]}, {"id": "cricova", "ru": "Крикова (винный тур)", "en": "Cricova winery tour", "ro": "Cricova", "km": 30, "h": "3", "B": 140, "PP": 50, "wine": 1, "items": [{"n": "Крикова: подземный город + дегустация «Бизнес»", "en": "Underground city tour + 'Business' tasting (4 wines)", "t": "pp", "p": 700}, {"n": "Дегустация «Эксперт» вместо «Бизнес»", "en": "Upgrade to 'Expert' tasting (7 wines, cheese)", "t": "pp", "p": 250, "opt": 1, "add": 15}]}, {"id": "milestii", "ru": "Милештий Мич (винный тур)", "en": "Milestii Mici winery tour", "ro": "Mileștii Mici", "km": 36, "h": "3", "B": 150, "PP": 50, "wine": 1, "items": [{"n": "Подвалы + дегустация «Хай, норок»", "en": "Cellar tour + 'Hai Noroc' tasting (3 wines)", "t": "pp", "p": 800}, {"n": "Программа «Молдова» с обедом вместо «Хай, норок»", "en": "Upgrade to 'Moldova' program with lunch (5 wines)", "t": "pp", "p": 500, "opt": 1, "add": 30}]}, {"id": "milestii_mimi", "ru": "Милештий Мич + Castel Mimi", "en": "Milestii Mici + Castel Mimi", "ro": "Mileștii Mici + Castel Mimi", "km": 110, "h": "7", "B": 170, "PP": 55, "wine": 1, "items": [{"n": "Милешты: экскурсия по подвалам", "en": "Milestii Mici cellar tour", "t": "pp", "p": 350}, {"n": "Castel Mimi: Simbol", "en": "Castel Mimi tour & tasting", "t": "pp", "p": 400}, {"n": "Castel Mimi: Iconic вместо Simbol", "en": "Upgrade to Castel Mimi Iconic (5 wines + snacks)", "t": "pp", "p": 450, "opt": 1, "add": 25}]}, {"id": "milestii_village", "ru": "Музей села + Милештий Мич", "en": "Village Museum + Milestii Mici", "ro": "Muzeul Satului + Mileștii Mici", "km": 40, "h": "4–5", "B": 150, "PP": 55, "wine": 1, "items": [{"n": "Музей села", "en": "Open-air Village Museum", "t": "pp", "p": 80}, {"n": "Милешты: подвалы + «Хай, норок»", "en": "Milestii Mici cellars + 'Hai Noroc' tasting", "t": "pp", "p": 800}]}, {"id": "manuc", "ru": "Манук-Бей + музеи + страусиная ферма", "en": "Manuc Bey Manor + museums + ostrich farm", "ro": "Conacul Manuc Bei + muzee", "km": 90, "h": "7", "B": 190, "PP": 25, "items": [{"n": "Музей под открытым небом", "en": "Open-air museum", "t": "pp", "p": 80}, {"n": "Усадьба Манук-Бей", "en": "Manuc Bey Manor", "t": "pp", "p": 80}, {"n": "Страусиная ферма", "en": "Ostrich farm", "t": "pp", "p": 30}, {"n": "Галерея Петру Костин", "en": "Petru Costin collection gallery", "t": "pp", "p": 80}, {"n": "Прочее", "en": "", "t": "pp", "p": 20, "hidden": 1}]}, {"id": "tipova", "ru": "Монастырь Цыпова + сыр", "en": "Țipova cave monastery + cheese tasting", "ro": "Mănăstirea Țipova + brânzeturi", "km": 200, "h": "9", "B": 250, "PP": 35, "items": [{"n": "Дегустация сыров", "en": "Cheese tasting", "t": "pp", "p": 350}, {"n": "Обед в Бутученах / Эпикраме", "en": "Traditional lunch", "t": "pp", "p": 300, "opt": 1, "add": 20}]}, {"id": "city", "ru": "Обзорный тур по Кишинёву", "en": "Chișinău city tour", "ro": "Tur Chișinău", "km": 20, "h": "3", "B": 110, "PP": 10, "items": [{"n": "Водонапорная башня", "en": "Water Tower museum", "t": "pp", "p": 30}, {"n": "Кофе-стоп", "en": "Coffee stop", "t": "pp", "p": 50, "opt": 1, "add": 3}]}, {"id": "custom", "ru": "Свой маршрут", "en": "Private custom tour", "ro": "Tur personalizat", "km": 100, "h": "—", "B": 150, "PP": 10, "items": []}];
+const CC_TOURS=[{"id":"transfer","ru":"Трансфер","en":"Private transfer","ro":"Transfer privat","km":15,"h":"—","transfer":1,"B":0,"PP":0,"items":[]},
+ {"id": "orhei", "ru": "Старый Орхей (+ Курки)", "en": "Old Orhei & Curchi Monastery", "ro": "Orheiul Vechi și Mănăstirea Curchi", "km": 120, "h": "6–7", "B": 190, "PP": 30, "items": [{"n": "Гид музея Старый Орхей", "en": "Old Orhei guided visit", "t": "group", "p": 300}, {"n": "Вход Старый Орхей", "en": "Old Orhei entrance", "t": "pp", "p": 20}, {"n": "Парковка Орхей", "en": "", "t": "group", "p": 50, "hidden": 1}, {"n": "Обед в Бутученах / Эпикраме", "en": "Traditional lunch", "t": "pp", "p": 300, "opt": 1, "add": 20}]}, {"id": "orhei_cricova", "ru": "Старый Орхей + Крикова", "en": "Old Orhei + Cricova winery", "ro": "Orheiul Vechi + Cricova", "km": 125, "h": "8–9", "B": 230, "PP": 60, "wine": 1, "items": [{"n": "Гид музея Старый Орхей", "en": "Old Orhei guided visit", "t": "group", "p": 300}, {"n": "Вход Старый Орхей", "en": "Old Orhei entrance", "t": "pp", "p": 20}, {"n": "Парковка Орхей", "en": "", "t": "group", "p": 50, "hidden": 1}, {"n": "Крикова: подземный город + дегустация «Бизнес»", "en": "Cricova underground city tour + 'Business' tasting", "t": "pp", "p": 700}, {"n": "Обед в Бутученах / Эпикраме", "en": "Traditional lunch", "t": "pp", "p": 300, "opt": 1, "add": 20}]}, {"id": "orhei_curchi", "ru": "Орхей + Курки + обед", "en": "Old Orhei + Curchi Monastery + traditional lunch", "ro": "Orheiul Vechi + Curchi + prânz tradițional", "km": 140, "h": "8", "B": 230, "PP": 45, "items": [{"n": "Гид музея Старый Орхей", "en": "Old Orhei guided visit", "t": "group", "p": 300}, {"n": "Вход Старый Орхей", "en": "Old Orhei entrance", "t": "pp", "p": 20}, {"n": "Парковка Орхей", "en": "", "t": "group", "p": 50, "hidden": 1}, {"n": "Обед в Бутученах / Эпикраме", "en": "Traditional lunch", "t": "pp", "p": 300}, {"n": "Сафари", "en": "Off-road safari", "t": "pp", "p": 75, "opt": 1, "add": 5}]}, {"id": "transnistria", "ru": "Приднестровье (Бендеры + Тирасполь)", "en": "Transnistria: Bender + Tiraspol ('Back to USSR')", "ro": "Transnistria: Tighina + Tiraspol", "km": 150, "h": "7–8", "B": 240, "PP": 30, "items": [{"n": "Бендерская крепость", "en": "Bender Fortress entrance", "t": "pp", "p": 50}, {"n": "Back to USSR", "en": "'Back to USSR' experience", "t": "group", "p": 150}, {"n": "Прочее", "en": "", "t": "pp", "p": 30, "hidden": 1}, {"n": "Советский обед", "en": "Soviet-style lunch", "t": "pp", "p": 250, "opt": 1, "add": 15}]}, {"id": "transnistria_milestii", "ru": "Приднестровье + Милештий Мич", "en": "Transnistria + Milestii Mici winery", "ro": "Transnistria + Mileștii Mici", "km": 180, "h": "9–10", "B": 270, "PP": 70, "wine": 1, "items": [{"n": "Бендерская крепость", "en": "Bender Fortress entrance", "t": "pp", "p": 50}, {"n": "Back to USSR", "en": "'Back to USSR' experience", "t": "group", "p": 150}, {"n": "Прочее", "en": "", "t": "pp", "p": 30, "hidden": 1}, {"n": "Милешты: подвалы + дегустация «Хай, норок»", "en": "Milestii Mici cellars + 'Hai Noroc' tasting", "t": "pp", "p": 800}]}, {"id": "gagauzia", "ru": "Гагаузия (Комрат)", "en": "Gagauzia (Comrat)", "ro": "Găgăuzia (Comrat)", "km": 210, "h": "9", "B": 260, "PP": 35, "items": [{"n": "Дегустация Vinuri de Comrat", "en": "Comrat winery tasting", "t": "pp", "p": 350}, {"n": "Музей ковров", "en": "Carpet Museum", "t": "pp", "p": 15}, {"n": "Ферма лошадей/осликов", "en": "Horse & donkey farm", "t": "group", "p": 150}, {"n": "Бешалма: катание на телеге", "en": "Cart ride in Beshalma", "t": "group", "p": 150, "opt": 1, "add": 10}]}, {"id": "cricova", "ru": "Крикова (винный тур)", "en": "Cricova winery tour", "ro": "Cricova", "km": 30, "h": "3", "B": 140, "PP": 50, "wine": 1, "items": [{"n": "Крикова: подземный город + дегустация «Бизнес»", "en": "Underground city tour + 'Business' tasting (4 wines)", "t": "pp", "p": 700}, {"n": "Дегустация «Эксперт» вместо «Бизнес»", "en": "Upgrade to 'Expert' tasting (7 wines, cheese)", "t": "pp", "p": 250, "opt": 1, "add": 15}]}, {"id": "milestii", "ru": "Милештий Мич (винный тур)", "en": "Milestii Mici winery tour", "ro": "Mileștii Mici", "km": 36, "h": "3", "B": 150, "PP": 50, "wine": 1, "items": [{"n": "Подвалы + дегустация «Хай, норок»", "en": "Cellar tour + 'Hai Noroc' tasting (3 wines)", "t": "pp", "p": 800}, {"n": "Программа «Молдова» с обедом вместо «Хай, норок»", "en": "Upgrade to 'Moldova' program with lunch (5 wines)", "t": "pp", "p": 500, "opt": 1, "add": 30}]}, {"id": "milestii_mimi", "ru": "Милештий Мич + Castel Mimi", "en": "Milestii Mici + Castel Mimi", "ro": "Mileștii Mici + Castel Mimi", "km": 110, "h": "7", "B": 170, "PP": 55, "wine": 1, "items": [{"n": "Милешты: экскурсия по подвалам", "en": "Milestii Mici cellar tour", "t": "pp", "p": 350}, {"n": "Castel Mimi: Simbol", "en": "Castel Mimi tour & tasting", "t": "pp", "p": 400}, {"n": "Castel Mimi: Iconic вместо Simbol", "en": "Upgrade to Castel Mimi Iconic (5 wines + snacks)", "t": "pp", "p": 450, "opt": 1, "add": 25}]}, {"id": "milestii_village", "ru": "Музей села + Милештий Мич", "en": "Village Museum + Milestii Mici", "ro": "Muzeul Satului + Mileștii Mici", "km": 40, "h": "4–5", "B": 150, "PP": 55, "wine": 1, "items": [{"n": "Музей села", "en": "Open-air Village Museum", "t": "pp", "p": 80}, {"n": "Милешты: подвалы + «Хай, норок»", "en": "Milestii Mici cellars + 'Hai Noroc' tasting", "t": "pp", "p": 800}]}, {"id": "manuc", "ru": "Манук-Бей + музеи + страусиная ферма", "en": "Manuc Bey Manor + museums + ostrich farm", "ro": "Conacul Manuc Bei + muzee", "km": 90, "h": "7", "B": 190, "PP": 25, "items": [{"n": "Музей под открытым небом", "en": "Open-air museum", "t": "pp", "p": 80}, {"n": "Усадьба Манук-Бей", "en": "Manuc Bey Manor", "t": "pp", "p": 80}, {"n": "Страусиная ферма", "en": "Ostrich farm", "t": "pp", "p": 30}, {"n": "Галерея Петру Костин", "en": "Petru Costin collection gallery", "t": "pp", "p": 80}, {"n": "Прочее", "en": "", "t": "pp", "p": 20, "hidden": 1}]}, {"id": "tipova", "ru": "Монастырь Цыпова + сыр", "en": "Țipova cave monastery + cheese tasting", "ro": "Mănăstirea Țipova + brânzeturi", "km": 200, "h": "9", "B": 250, "PP": 35, "items": [{"n": "Дегустация сыров", "en": "Cheese tasting", "t": "pp", "p": 350}, {"n": "Обед в Бутученах / Эпикраме", "en": "Traditional lunch", "t": "pp", "p": 300, "opt": 1, "add": 20}]}, {"id": "city", "ru": "Обзорный тур по Кишинёву", "en": "Chișinău city tour", "ro": "Tur Chișinău", "km": 20, "h": "3", "B": 110, "PP": 10, "items": [{"n": "Водонапорная башня", "en": "Water Tower museum", "t": "pp", "p": 30}, {"n": "Кофе-стоп", "en": "Coffee stop", "t": "pp", "p": 50, "opt": 1, "add": 3}]}, {"id": "custom", "ru": "Свой маршрут", "en": "Private custom tour", "ro": "Tur personalizat", "km": 100, "h": "—", "B": 150, "PP": 10, "items": []}];
 const ccS={car:"vclass",opts:{},inited:false,last:null};
 const ccEl=id=>document.getElementById(id);
 const ccN=id=>+(ccEl(id)?.value)||0;
@@ -1732,14 +1750,22 @@ async function ccInit(){
   } else ccCalc();
 }
 function ccLoadTour(){
-  const t=ccTour(); ccEl('cc-km').value=t.km; ccEl('cc-local').value=CC.local; ccS.opts={};
+  const t=ccTour(); ccEl('cc-km').value=t.km; ccEl('cc-local').value=t.transfer?0:CC.local; ccS.opts={};
+  ccEl('cc-trf').style.display=t.transfer?'block':'none'; ccEl('cc-guide').value=t.transfer?'0':'1'; ccEl('cc-kml').textContent=t.transfer?'Км в одну сторону':'Км маршрут'; ccS.hrsManual=false; if(t.transfer) ccEl('cc-trroute').value='air'; ccAutoHrs();
   t.items.forEach((it,i)=>{ccS.opts[i]=!it.opt;});
-  ccEl('cc-items').innerHTML=t.items.map((it,i)=>it.hidden?'':`<label class="cc-item"><input type="checkbox" ${ccS.opts[i]?'checked':''} onchange="ccS.opts[${i}]=this.checked;ccCalc()"><span class="n">${it.n}</span><span class="p">${it.opt?'+'+it.add+' €'+(it.t==='pp'?'/чел':''):'включено'}</span></label>`).join('')||'<div class="cc-lock">Свой маршрут: укажи км, входы впиши в заметки.</div>';
+  ccEl('cc-items').innerHTML=t.items.map((it,i)=>it.hidden?'':`<label class="cc-item"><input type="checkbox" ${ccS.opts[i]?'checked':''} onchange="ccS.opts[${i}]=this.checked;ccCalc()"><span class="n">${it.n}</span><span class="p">${it.opt?'+'+it.add+' €'+(it.t==='pp'?'/чел':''):'включено'}</span></label>`).join('')||(t.transfer?'<div class="cc-lock">Трансфер: км — в одну сторону (возврат машины считается в расходах), часы — всё время водителя с ожиданием.</div>':'<div class="cc-lock">Свой маршрут: укажи км, входы впиши в заметки.</div>');
   ccAutoCar(); ccCalc();
 }
+function ccAutoHrs(){ if(ccS.hrsManual) return; const km=ccN('cc-km'); ccEl('cc-hrs').value=km?Math.ceil((km*2/60+1)*2)/2:''; }
+function ccTrRoute(){ const v=ccEl('cc-trroute').value, to=ccEl('cc-to'), auto=['','Аэропорт Кишинёва','Одесса'].includes(to.value);
+  if(v==='air'){ccEl('cc-km').value=15; if(auto) to.value='Аэропорт Кишинёва';}
+  if(v==='ods'){ccEl('cc-km').value=180; if(auto) to.value='Одесса';}
+  if(v==='km'&&auto) to.value='';
+  ccS.hrsManual=false; ccAutoHrs(); ccCalc(); }
 function ccAutoCar(){
   const n=ccPeople();
-  if(ccS.car==='bus'&&n<=7) ccS.car='vclass';
+  // 1 гость — по умолчанию Lincoln, 2+ — V-Class (машину потом можно выбрать вручную)
+  const pax=ccN('cc-pax'); ccS.car=pax<=1?'lincoln':'vclass';
   if(!CC_CARS.find(c=>c.id===ccS.car&&c.cap>=n)){const fit=CC_CARS.filter(c=>c.cap>=n);ccS.car=(fit.find(c=>c.id==='vclass')||fit[0]).id;}
 }
 function ccPick(id){ccS.car=id;ccCalc();}
@@ -1750,12 +1776,12 @@ function ccCalc(){
   const n=ccPeople(),t=ccTour(),pax=ccN('cc-pax'),guide=+ccEl('cc-guide').value,eur=eurMdl||20.16;
   ccEl('cc-cars').innerHTML=CC_CARS.map(c=>`<button class="cc-car${ccS.car===c.id?' on':''}" ${c.cap<n?'disabled':''} onclick="ccPick('${c.id}')"><b>${c.name}</b><span>${c.note}</span></button>`).join('');
   const cap=ccEl('cc-cap'); if(n>7&&ccS.car!=='bus'){cap.style.display='block';cap.textContent=n+' чел. с гидом — в V-Class максимум 7.';} else cap.style.display='none';
-  const car=CC_CARS.find(c=>c.id===ccS.car), km=ccN('cc-km')+ccN('cc-local');
+  const car=CC_CARS.find(c=>c.id===ccS.car), km=(ccN('cc-km')+ccN('cc-local'))*(t.transfer?2:1); // трансфер: машина возвращается пустой
   // себестоимость
   const vFuel=km*CC.cons/100*CC.diesel, vWear=vFuel*CC.wear/100;
   let fuel=0,wear=0,driver=0,bus=0;
   if(car.fuel==='bus') bus=ccBus(n);
-  else{const fp=car.fuel==='diesel'?CC.diesel:CC.petrol; fuel=km*CC.cons/100*fp; wear=fuel*CC.wear/100; driver=CC.driver;}
+  else{const fp=car.fuel==='diesel'?CC.diesel:CC.petrol; fuel=km*CC.cons/100*fp; wear=fuel*CC.wear/100; driver=t.transfer?ccN('cc-hrs')*CC.drvh:CC.driver;}
   const g=guide?CC.guide:0, wk=t.wine&&ccIsWeekend();
   let extras=0,optAdd=0;
   t.items.forEach((it,i)=>{if(!ccS.opts[i])return; const k=it.t==='pp'?pax:1; extras+=it.p*k; if(it.opt) optAdd+=(it.add||0)*k;});
@@ -1763,31 +1789,42 @@ function ccCalc(){
   const cost=fuel+wear+driver+bus+g+extras;
   // цена: база + за человека + опции (+ выходные) − скидки за машину/без гида (+ доплата за автобус)
   const pr=ccPrices(t), r=CC.round||5;
-  let raw=pr.B+pr.PP*pax+optAdd+(wk?CC.wkd*pax:0);
-  const adj=[];
+  const solo=pax<=1?pr.B*(CC.solo||0)/100:0;
+  let raw=pr.B-solo+pr.PP*pax+optAdd+(wk?CC.wkd*pax:0);
+  const adj=[]; if(solo) adj.push('−'+Math.round(solo)+' € один гость');
   if(car.id==='lincoln'||car.id==='camry'){raw-=CC.small;adj.push('−'+CC.small+' € легковая');}
   if(!guide){const gd=Math.round(CC.guide/eur);raw-=gd;adj.push('−'+gd+' € без гида');}
   if(bus){const be=Math.max(0,Math.ceil((bus-vFuel-vWear-CC.driver)/eur));raw+=be;adj.push('+'+be+' € автобус');}
   if(wk) adj.push('+'+CC.wkd+' €/чел выходные');
-  let full=Math.ceil(raw*(CC.scale||100)/100/r)*r;
-  let disc=ccN('cc-disc'); const maxd=reportUnlocked?90:CC.maxdisc;
-  if(disc>maxd){disc=maxd;ccEl('cc-disc').value=maxd;toast('Скидка больше '+maxd+'% — только с разрешения владельца','#f7904f');}
+  if(t.transfer){ // трансфер: € за км + время водителя (+ гид, + автобус по себестоимости)
+    adj.length=0; const dh=(bus?0:driver)/eur;
+    const rt=ccEl('cc-trroute').value, ex=g/eur+(bus?bus/eur:0);
+    if(rt==='air'){raw=(pax>4?CC.tr_air5:CC.tr_air)+ex; adj.push('аэропорт ↔ город, фикс '+(pax>4?CC.tr_air5:CC.tr_air)+' €'+(pax>4?' (5+ чел.)':''));}
+    else if(rt==='ods'){raw=CC.tr_ods+ex; adj.push('Кишинёв ↔ Одесса, фикс '+CC.tr_ods+' €');}
+    else{const k1=ccN('cc-km'); raw=Math.max(k1*CC.perkm+dh+ex,CC.trmin); adj.push(k1+' км × '+CC.perkm+' € + водитель '+ccN('cc-hrs')+' ч ≈ '+Math.round(dh)+' €');}
+    if(g) adj.push('+ гид');
+  }
+  let full=Math.ceil(raw*(t.transfer?1:(CC.scale||100)/100)/r)*r;
+  // скидка до лимита — сама; больше лимита — только с отметкой «одобрил: Арина/Денис»
+  let disc=Math.min(Math.max(ccN('cc-disc'),0),50); const apr=ccEl('cc-approver').value, needApr=disc>CC.maxdisc;
+  ccEl('cc-apr').style.display=needApr?'block':'none';
+  if(needApr&&!apr) disc=CC.maxdisc;
   const dp=disc/100, mp=Math.min(CC.mgr,50)/100;
   const tot=dp?Math.ceil(full*(1-dp)/r)*r:full;
   const mgr=tot*eur*mp, profit=tot*eur-cost-mgr, pp=pax?Math.ceil(tot/pax):0;
   ccEl('cc-price').innerHTML=tot+' €'+(dp?` <s>${full} €</s>`:'');
-  ccEl('cc-pp').textContent=`${pax} чел. · ≈ ${pp} € с человека · ${ccL(tot*eur)} · база ${pr.B} € + ${pr.PP} € × ${pax}${optAdd?' + опции '+optAdd+' €':''}${adj.length?' · '+adj.join(', '):''}`;
+  ccEl('cc-pp').textContent=t.transfer?`${pax} чел. · ${ccL(tot*eur)} · ${adj.join(', ')}`:`${pax} чел. · ≈ ${pp} € с человека · ${ccL(tot*eur)} · база ${pr.B} € + ${pr.PP} € × ${pax}${optAdd?' + опции '+optAdd+' €':''}${adj.length?' · '+adj.join(', '):''}`;
   const rows=[];
   if(bus) rows.push(['Автобус партнёра',bus]);
-  else rows.push([`Топливо ${km} км`,fuel],[`Износ и ремонт ${CC.wear}%`,wear],['Водитель',driver]);
+  else rows.push([`Топливо ${km} км`,fuel],[`Износ и ремонт ${CC.wear}%`,wear],[t.transfer?`Водитель ${ccN('cc-hrs')} ч × ${CC.drvh}`:'Водитель',driver]);
   if(g) rows.push(['Гид',g]);
   t.items.forEach((it,i)=>{if(ccS.opts[i]) rows.push([it.n+(it.t==='pp'?' × '+pax:''),it.t==='pp'?it.p*pax:it.p]);});
   if(wk) rows.push(['Винодельни: выходные +100 × '+pax,100*pax]);
   ccEl('cc-break').innerHTML=rows.map(x=>`<tr><td>${x[0]}</td><td>${ccL(x[1])}</td></tr>`).join('')
     +`<tr class="t"><td>Себестоимость</td><td>${ccL(cost)}</td></tr>`
     +(mgr?`<tr><td>Агентские ${CC.mgr}%</td><td>${ccL(mgr)}</td></tr>`:'')
-    +`<tr class="${profit<0?'bad':'ok'}"><td>Чистая прибыль${dp?' (скидка '+disc+'%)':''}</td><td>${ccL(profit)} · ${Math.round(profit/eur)} €</td></tr>`;
-  ccS.last={t,pax,guide,car,tot,full,dp,pp,cost,mgr,profit,eur};
+    +`<tr class="${profit<0?'bad':'ok'}"><td>Чистая прибыль${dp?' (скидка '+disc+'%'+(needApr&&!apr?' — больше только с одобрением':apr&&needApr?', одобрил(а) '+apr:'')+')':''}</td><td>${ccL(profit)} · ${Math.round(profit/eur)} €</td></tr>`;
+  ccS.last={t,pax,guide,car,tot,full,dp,pp,cost,mgr,profit,eur,apr:needApr?apr:'',blocked:needApr&&!apr};
   ccOffer();
 }
 function ccOffer(){
@@ -1802,6 +1839,11 @@ function ccOffer(){
   const title=L==='en'?t.en:L==='ro'?t.ro:t.ru, pc=Math.round(dp*100);
   let x;
   const sig='Travel Moldova Agency\nstr. Pușkin 35, Chișinău';
+  if(t.transfer){ const to=ccEl('cc-to').value.trim();
+    if(L==='en') x=`Hello${name?' '+name:''}! 👋\n\n✅ Your transfer is confirmed. Thank you for choosing Travel Moldova!\n\n📅 Date: ${ds}\n📍 From: ${pick||'—'}\n🏁 To: ${to||'—'}\n👥 Passengers: ${pax}\n🚐 Vehicle: ${cn} with driver\n\n💶 Price: ${tot} €${dp?'\n🎁 Special price −'+pc+'% (instead of '+full+' €)':''}\nPayment: cash (EUR / USD / MDL) or card.\n\nThe driver will meet you at the pick-up point at the agreed time. If anything changes, just reply to this message.\n\nHave a good trip! 🇲🇩\n${sig}`;
+    else if(L==='ro') x=`Bună ziua${name?', '+name:''}! 👋\n\n✅ Transferul dumneavoastră este confirmat. Vă mulțumim că ați ales Travel Moldova!\n\n📅 Data: ${ds}\n📍 De la: ${pick||'—'}\n🏁 Până la: ${to||'—'}\n👥 Pasageri: ${pax}\n🚐 Transport: ${cn} cu șofer\n\n💶 Preț: ${tot} €${dp?'\n🎁 Preț special −'+pc+'% (în loc de '+full+' €)':''}\nPlata: numerar (EUR / USD / MDL) sau card.\n\nȘoferul vă va aștepta la locul de preluare la ora stabilită. Dacă se schimbă ceva, răspundeți la acest mesaj.\n\nDrum bun! 🇲🇩\n${sig}`;
+    else x=`Здравствуйте${name?', '+name:''}! 👋\n\n✅ Ваш трансфер подтверждён. Спасибо, что выбрали Travel Moldova!\n\n📅 Дата: ${ds}\n📍 Откуда: ${pick||'—'}\n🏁 Куда: ${to||'—'}\n👥 Пассажиров: ${pax}\n🚐 Машина: ${cn} с водителем\n\n💶 Цена: ${tot} €${dp?'\n🎁 Специальная цена −'+pc+'% (вместо '+full+' €)':''}\nОплата: наличными (EUR / USD / MDL) или картой.\n\nВодитель будет ждать вас в месте встречи в назначенное время. Если что-то изменится — просто ответьте на это сообщение.\n\nХорошей дороги! 🇲🇩\n${sig}`;
+    ccEl('cc-offer').value=x; return; }
   if(L==='en') x=`Hello${name?' '+name:''}! 👋\n\n✅ Your tour is confirmed. Thank you for choosing Travel Moldova!\n\n🗺 Tour: ${title}\n📅 Date: ${ds}${pick?'\n📍 Pick-up: '+pick:''}\n👥 Guests: ${pax} · private tour\n⏱ Duration: approx. ${t.h} hours\n🚐 Vehicle: ${cn} with driver\n${guide?'🎙 Guide: '+ln+'\n':''}\nIncluded:\n• Pick-up and drop-off in Chișinău\n${list}\n\n💶 Total: ${tot} € for the group (≈ ${pp} € per person)${dp?'\n🎁 Special price −'+pc+'% (instead of '+full+' €)':''}\nPayment on the day of the tour: cash (EUR / USD / MDL) or card.\n\nOur driver will be waiting at the pick-up point at the agreed time. If anything changes, just reply to this message. Free cancellation up to 24 hours before the tour.\n\nSee you soon! 🇲🇩\n${sig}`;
   else if(L==='ro') x=`Bună ziua${name?', '+name:''}! 👋\n\n✅ Turul dumneavoastră este confirmat. Vă mulțumim că ați ales Travel Moldova!\n\n🗺 Tur: ${title}\n📅 Data: ${ds}${pick?'\n📍 Preluare: '+pick:''}\n👥 Persoane: ${pax} · tur privat\n⏱ Durata: aprox. ${t.h} ore\n🚐 Transport: ${cn} cu șofer\n${guide?'🎙 Ghid: limba '+ln+'\n':''}\nInclus:\n• Preluare și întoarcere în Chișinău\n${list}\n\n💶 Total: ${tot} € pentru grup (≈ ${pp} € de persoană)${dp?'\n🎁 Preț special −'+pc+'% (în loc de '+full+' €)':''}\nPlata în ziua turului: numerar (EUR / USD / MDL) sau card.\n\nȘoferul vă va aștepta la locul de preluare la ora stabilită. Dacă se schimbă ceva, răspundeți la acest mesaj. Anulare gratuită cu 24 de ore înainte.\n\nVă așteptăm! 🇲🇩\n${sig}`;
   else x=`Здравствуйте${name?', '+name:''}! 👋\n\n✅ Ваш тур подтверждён. Спасибо, что выбрали Travel Moldova!\n\n🗺 Тур: ${title}\n📅 Дата: ${ds}${pick?'\n📍 Встреча: '+pick:''}\n👥 Гостей: ${pax} · индивидуальный тур\n⏱ Длительность: около ${t.h} ч\n🚐 Транспорт: ${cn} с водителем\n${guide?'🎙 Гид: на '+ln+' языке\n':''}\nВходит:\n• Забираем и привозим обратно в Кишинёве\n${list}\n\n💶 Итого: ${tot} € за группу (≈ ${pp} € с человека)${dp?'\n🎁 Специальная цена −'+pc+'% (вместо '+full+' €)':''}\nОплата в день тура: наличными (EUR / USD / MDL) или картой.\n\nВодитель будет ждать вас в месте встречи в назначенное время. Если что-то изменится — просто ответьте на это сообщение. Бесплатная отмена за 24 часа до тура.\n\nДо встречи! 🇲🇩\n${sig}`;
@@ -1822,8 +1864,17 @@ function ccAddToApp(){
   const s=ccS.last; if(!s) return;
   const name=ccEl('cc-name').value.trim(), phone=ccEl('cc-phone').value.trim(), date=ccEl('cc-date').value, time=ccEl('cc-time').value;
   if(!name||!phone||!date||!time) return toast('⚠️ Заполни имя, телефон, дату и время','#f74f6f');
+  if(s.blocked) return toast('⚠️ Скидка больше '+CC.maxdisc+'%: выбери, кто одобрил','#f74f6f');
   const its=s.t.items.filter((it,i)=>s.t.items.indexOf(it)>-1&&ccS.opts[i]&&!it.hidden).map(i=>i.n).join(', ');
-  const notes=`${s.car.name}${s.guide?' · гид':''}${its?' · '+its:''}${s.dp?' · скидка '+Math.round(s.dp*100)+'%':''}${s.mgr?' · агентские '+Math.round(s.mgr)+' лей':''}`;
+  const notes=`${s.car.name}${s.guide?' · гид':''}${its?' · '+its:''}${s.dp?' · скидка '+Math.round(s.dp*100)+'%'+(s.apr?' (одобрил(а) '+s.apr+')':''):''}${s.mgr?' · агентские '+Math.round(s.mgr)+' лей':''}`;
+  if(s.t.transfer){
+    const from=ccEl('cc-pickup').value.trim(), to=ccEl('cc-to').value.trim();
+    if(!from||!to) return toast('⚠️ Заполни «Откуда» и «Куда»','#f74f6f');
+    const rt={id:Date.now(),type:'transfer',done:false,name,phone,date,time,from,to,people:String(s.pax),price:String(s.tot),
+      cost:String(Math.round(s.cost+s.mgr)),rate:s.eur,notes:`${s.car.name} · ${ccEl('cc-trroute').selectedOptions[0].text} · ${ccN('cc-km')} км · ${ccN('cc-hrs')} ч${s.dp?' · скидка '+Math.round(s.dp*100)+'%'+(s.apr?' (одобрил(а) '+s.apr+')':''):''}`,created:new Date().toISOString()};
+    records.push(rt); save(); pushToSupabase(rt); sendTG(rt); notifyAll(rt);
+    toast('✅ Трансфер добавлен!'); ['cc-name','cc-phone','cc-pickup','cc-to'].forEach(id=>ccEl(id).value=''); goTab('transfers'); return;
+  }
   const r={id:Date.now(),type:'excursion',done:false,name,phone,date,time,tour:s.t.ru,
     pickup:ccEl('cc-pickup').value.trim(),people:String(s.pax),price:String(s.tot),cost:String(Math.round(s.cost+s.mgr)),
     rate:s.eur,notes,created:new Date().toISOString()};
@@ -1839,12 +1890,12 @@ function ccUnlock(){
 function ccShowSettings(){
   ccEl('cc-lockbox').style.display='none'; ccEl('cc-sets').style.display='block';
   Object.keys(CC_DEFAULTS).forEach(k=>{const el=ccEl('cs-'+k); if(el) el.value=CC[k];});
-  ccEl('cs-tours').innerHTML=CC_TOURS.map(t=>{const p=ccPrices(t);return `<div class="cc-3" style="align-items:end"><label style="grid-column:span 1">${t.ru}</label><label>База<input data-tb="${t.id}" type="number" step="5" value="${p.B}"></label><label>За чел.<input data-tp="${t.id}" type="number" step="5" value="${p.PP}"></label></div>`;}).join('');
+  ccEl('cs-tours').innerHTML=CC_TOURS.filter(t=>!t.transfer).map(t=>{const p=ccPrices(t);return `<div class="cc-3" style="align-items:end"><label style="grid-column:span 1">${t.ru}</label><label>База<input data-tb="${t.id}" type="number" step="5" value="${p.B}"></label><label>За чел.<input data-tp="${t.id}" type="number" step="5" value="${p.PP}"></label></div>`;}).join('');
 }
 async function ccSaveSettings(){
   if(!reportUnlocked) return;
   const data={}; Object.keys(CC_DEFAULTS).forEach(k=>{const el=ccEl('cs-'+k); data[k]=el&&el.value!==''?+el.value:CC_DEFAULTS[k];});
-  data.tours={}; CC_TOURS.forEach(t=>{const b=document.querySelector(`[data-tb="${t.id}"]`),q=document.querySelector(`[data-tp="${t.id}"]`); if(b&&q&&(+b.value!==t.B||+q.value!==t.PP)) data.tours[t.id]={B:+b.value,PP:+q.value};});
+  data.tours={}; CC_TOURS.filter(t=>!t.transfer).forEach(t=>{const b=document.querySelector(`[data-tb="${t.id}"]`),q=document.querySelector(`[data-tp="${t.id}"]`); if(b&&q&&(+b.value!==t.B||+q.value!==t.PP)) data.tours[t.id]={B:+b.value,PP:+q.value};});
   CC=Object.assign({},CC_DEFAULTS,data); ccEl('cc-local').value=CC.local; ccCalc();
   try{
     const res=await fetch(SB_URL+'/rest/v1/calc_settings',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({id:'main',data,updated_at:new Date().toISOString()})});
