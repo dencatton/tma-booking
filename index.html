@@ -542,7 +542,7 @@ div[style*="background: rgb(79"] { display: none !important; }
           <label>Округл. €<input id="cs-round" type="number" step="1"></label>
           <label>Водитель лей<input id="cs-driver" type="number" step="50"></label>
           <label>Гид лей/день<input id="cs-guide" type="number" step="50"></label>
-          <label>Износ %<input id="cs-wear" type="number" step="1"></label>
+          <label>Износ % от цены<input id="cs-wear" type="number" step="1"></label>
           <label>Дизель лей/л<input id="cs-diesel" type="number" step="0.1"></label>
           <label>Бензин лей/л<input id="cs-petrol" type="number" step="0.1"></label>
           <label>Расход л/100<input id="cs-cons" type="number" step="0.5"></label>
@@ -602,7 +602,7 @@ div[style*="background: rgb(79"] { display: none !important; }
       <div class="form-group"><label>Куда <span class="req">*</span></label><input id="t-to" type="text" placeholder="Сочи, отель..."></div>
       <div class="row2">
         <div class="form-group"><label>Людей</label><input id="t-people" type="number" placeholder="2" min="1"></div>
-        <div class="form-group"><label>Цена €</label><input id="t-price" type="number" placeholder="120" oninput="calcTransfer()"></div>
+        <div class="form-group"><label>Цена €</label><input id="t-price" type="number" placeholder="120" oninput="calcTransfer();if(document.getElementById('t-km').value)calcTransferCost()"></div>
       </div>
       <div class="row2">
         <div class="form-group"><label>Км туда-обратно</label><input id="t-km" type="number" placeholder="60" oninput="calcTransferCost()"></div>
@@ -1778,15 +1778,15 @@ function ccCalc(){
   const cap=ccEl('cc-cap'); if(n>7&&ccS.car!=='bus'){cap.style.display='block';cap.textContent=n+' чел. с гидом — в V-Class максимум 7.';} else cap.style.display='none';
   const car=CC_CARS.find(c=>c.id===ccS.car), km=(ccN('cc-km')+ccN('cc-local'))*(t.transfer?2:1); // трансфер: машина возвращается пустой
   // себестоимость
-  const vFuel=km*CC.cons/100*CC.diesel, vWear=vFuel*CC.wear/100;
+  const vFuel=km*CC.cons/100*CC.diesel, vWear=0;
   let fuel=0,wear=0,driver=0,bus=0;
   if(car.fuel==='bus') bus=ccBus(n);
-  else{const fp=car.fuel==='diesel'?CC.diesel:CC.petrol; fuel=km*CC.cons/100*fp; wear=fuel*CC.wear/100; driver=t.transfer?ccN('cc-hrs')*CC.drvh:CC.driver;}
+  else{const fp=car.fuel==='diesel'?CC.diesel:CC.petrol; fuel=km*CC.cons/100*fp; driver=t.transfer?ccN('cc-hrs')*CC.drvh:CC.driver;}
   const g=guide?CC.guide:0, wk=t.wine&&ccIsWeekend();
   let extras=0,optAdd=0;
   t.items.forEach((it,i)=>{if(!ccS.opts[i])return; const k=it.t==='pp'?pax:1; extras+=it.p*k; if(it.opt) optAdd+=(it.add||0)*k;});
   if(wk) extras+=100*pax;
-  const cost=fuel+wear+driver+bus+g+extras;
+  let cost=fuel+driver+bus+g+extras; // износ добавляется ниже — % от итоговой цены
   // цена: база + за человека + опции (+ выходные) − скидки за машину/без гида (+ доплата за автобус)
   const pr=ccPrices(t), r=CC.round||5;
   const solo=pax<=1?pr.B*(CC.solo||0)/100:0;
@@ -1811,12 +1811,13 @@ function ccCalc(){
   if(needApr&&!apr) disc=CC.maxdisc;
   const dp=disc/100, mp=Math.min(CC.mgr,50)/100;
   const tot=dp?Math.ceil(full*(1-dp)/r)*r:full;
+  if(car.fuel!=='bus'){wear=tot*eur*CC.wear/100; cost+=wear;}
   const mgr=tot*eur*mp, profit=tot*eur-cost-mgr, pp=pax?Math.ceil(tot/pax):0;
   ccEl('cc-price').innerHTML=tot+' €'+(dp?` <s>${full} €</s>`:'');
   ccEl('cc-pp').textContent=t.transfer?`${pax} чел. · ${ccL(tot*eur)} · ${adj.join(', ')}`:`${pax} чел. · ≈ ${pp} € с человека · ${ccL(tot*eur)} · база ${pr.B} € + ${pr.PP} € × ${pax}${optAdd?' + опции '+optAdd+' €':''}${adj.length?' · '+adj.join(', '):''}`;
   const rows=[];
   if(bus) rows.push(['Автобус партнёра',bus]);
-  else rows.push([`Топливо ${km} км`,fuel],[`Износ и ремонт ${CC.wear}%`,wear],[t.transfer?`Водитель ${ccN('cc-hrs')} ч × ${CC.drvh}`:'Водитель',driver]);
+  else rows.push([`Топливо ${km} км`,fuel],[`Износ и ремонт ${CC.wear}% от цены`,wear],[t.transfer?`Водитель ${ccN('cc-hrs')} ч × ${CC.drvh}`:'Водитель',driver]);
   if(g) rows.push(['Гид',g]);
   t.items.forEach((it,i)=>{if(ccS.opts[i]) rows.push([it.n+(it.t==='pp'?' × '+pax:''),it.t==='pp'?it.p*pax:it.p]);});
   if(wk) rows.push(['Винодельни: выходные +100 × '+pax,100*pax]);
@@ -1905,10 +1906,11 @@ async function ccSaveSettings(){
 }
 
 
-// затраты трансфера: км × расход × дизель + износ + водитель (настройки калькулятора)
+// затраты трансфера: км × расход × дизель + водитель + износ (% от цены) (настройки калькулятора)
 function calcTransferCost(){
   const km=parseFloat(document.getElementById('t-km').value)||0;
-  const c=km? Math.round(km*CC.cons/100*CC.diesel*(1+CC.wear/100)+CC.tdriver) : '';
+  const price=parseFloat(document.getElementById('t-price').value)||0; // износ — % от цены трансфера
+  const c=km? Math.round(km*CC.cons/100*CC.diesel+CC.tdriver+price*eurMdl*CC.wear/100) : '';
   document.getElementById('t-cost').value=c;
 }
 setTimeout(()=>{try{ccLoadSettings();}catch(e){}},1500);
